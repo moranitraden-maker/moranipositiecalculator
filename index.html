@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morani Position Size Calculator</title>
+<style>
+:root{
+  --gold:#C9A84C;--gold-light:#E2B95E;--gold-dim:rgba(201,168,76,.08);--gold-border:rgba(201,168,76,.3);
+  --gold-bg:#120e03;--bg:#0f0f0f;--bg2:#1a1a1a;--bg3:#242424;
+  --border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.15);
+  --text:#f2f2f2;--text2:#aaa;--text3:#666;
+  --green:#6ab02a;--amber:#cc8c1a;--red:#c03535;
+  --green-bg:rgba(106,176,42,.12);--amber-bg:rgba(204,140,26,.12);--red-bg:rgba(192,53,53,.12);
+  --r:8px;--rl:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+.page{max-width:680px;margin:0 auto;padding:1.75rem 1rem 5rem}
+
+/* BRAND */
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:1.75rem;padding-bottom:1.25rem;border-bottom:.5px solid var(--border)}
+.brand-bar{width:4px;height:34px;background:var(--gold);border-radius:2px;flex-shrink:0}
+.brand-text h1{font-size:16px;font-weight:600;color:var(--text);letter-spacing:-.01em}
+.brand-text p{font-size:12px;color:var(--text3);margin-top:2px}
+
+/* TABS */
+.tabs{display:flex;border:.5px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-bottom:1.5rem}
+.tab{flex:1;padding:11px 6px;font-size:12px;font-weight:600;color:var(--text3);background:transparent;border:none;cursor:pointer;transition:all .2s;letter-spacing:.02em;touch-action:manipulation}
+.tab.on{background:var(--bg2);color:var(--text)}
+.tab+.tab{border-left:.5px solid var(--border)}
+.panel{display:none}.panel.on{display:block}
+
+/* SECTION */
+.sec{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:9px;margin-top:22px;display:flex;align-items:center;gap:8px}
+.sec::after{content:'';flex:1;height:.5px;background:var(--border)}
+
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+
+/* FIELDS */
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:5px}
+.hint{font-size:11px;color:var(--text3);margin-top:1px}
+.ir{display:flex;align-items:center;gap:8px}
+.sym{font-size:13px;font-weight:700;color:var(--gold);flex-shrink:0;min-width:16px}
+.ir input,.ir select{
+  flex:1;height:42px;padding:0 12px;font-size:14px;font-weight:500;
+  border:.5px solid var(--border2);border-radius:var(--r);
+  background:var(--bg2);color:var(--text);min-width:0;
+  -moz-appearance:textfield;
+  -webkit-appearance:none;
+}
+.ir input::-webkit-outer-spin-button,.ir input::-webkit-inner-spin-button{-webkit-appearance:none}
+.ir input:focus,.ir select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.1)}
+.ir input::placeholder{color:var(--text3);font-weight:400}
+.ir select option{background:var(--bg2)}
+
+/* PRIMARY BUTTON STYLE — goud met witte tekst */
+.btn-primary{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  width:100%;padding:13px;border:none;border-radius:var(--r);
+  background:var(--gold);color:#1a1000;
+  font-size:13px;font-weight:700;cursor:pointer;
+  transition:all .2s;margin-top:14px;
+  letter-spacing:.02em;touch-action:manipulation;
+}
+.btn-primary:hover{background:var(--gold-light)}
+.btn-primary:active{transform:scale(.98)}
+
+.btn-secondary{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  width:100%;padding:11px;border:.5px solid var(--border2);border-radius:var(--r);
+  background:transparent;color:var(--text2);
+  font-size:12px;font-weight:600;cursor:pointer;
+  transition:all .2s;margin-top:8px;
+  touch-action:manipulation;
+}
+.btn-secondary:hover{background:var(--bg2);color:var(--text)}
+
+/* ASSET BUTTONS */
+.ab{
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:12px 4px;border:.5px solid var(--border);border-radius:var(--r);
+  background:transparent;cursor:pointer;transition:all .2s;
+  touch-action:manipulation;
+}
+.ab:hover{background:var(--bg2);border-color:var(--border2)}
+.ab.on{border-color:var(--gold);background:var(--gold-dim)}
+.ab-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:7px}
+.ab-name{font-size:10px;font-weight:700;color:var(--text2);text-align:center;line-height:1.3}
+.ab.on .ab-name{color:var(--gold)}
+.ab-sub{font-size:9px;color:var(--text3);text-align:center}
+
+/* LONG/SHORT */
+.ls-wrap{display:flex;border:.5px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-bottom:4px}
+.ls-btn{flex:1;padding:11px;font-size:13px;font-weight:700;border:none;background:transparent;cursor:pointer;transition:all .2s;color:var(--text3);touch-action:manipulation}
+.ls-btn.long.on{background:var(--green-bg);color:var(--green)}
+.ls-btn.short.on{background:var(--red-bg);color:var(--red)}
+.ls-btn+.ls-btn{border-left:.5px solid var(--border)}
+
+/* EXCHANGE */
+.ex-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:8px}
+.ex-btn{
+  padding:10px 4px;border:.5px solid var(--border);border-radius:var(--r);
+  background:transparent;cursor:pointer;transition:all .2s;text-align:center;
+  touch-action:manipulation;
+}
+.ex-btn:hover{background:var(--bg2)}
+.ex-btn.on{border-color:var(--gold);background:var(--gold-dim)}
+.ex-name{font-size:11px;font-weight:700;color:var(--text2);display:block}
+.ex-btn.on .ex-name{color:var(--gold)}
+.ex-fee{font-size:9px;color:var(--text3);display:block;margin-top:2px}
+.fee-type-wrap{display:flex;border:.5px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:8px}
+.ft-btn{flex:1;padding:9px;font-size:11px;font-weight:600;border:none;background:transparent;cursor:pointer;color:var(--text3);transition:all .2s;touch-action:manipulation}
+.ft-btn.on{background:var(--bg2);color:var(--text)}
+.ft-btn+.ft-btn{border-left:.5px solid var(--border)}
+.fee-box{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);padding:10px 13px;display:flex;justify-content:space-between;align-items:center}
+.fee-box .fl{font-size:11px;color:var(--text2)}
+.fee-box .fv{font-size:14px;font-weight:700;color:var(--text)}
+
+/* INFO / PAIR */
+.info-box{background:var(--gold-dim);border:.5px solid var(--gold-border);border-radius:var(--r);padding:9px 13px;font-size:11px;color:var(--gold);margin-top:8px;display:none}
+.info-box.on{display:block}
+.pair-row{display:none;margin-top:10px}
+.pair-row.show{display:block}
+.spread-row{display:none;margin-top:10px}
+.spread-row.show{display:block}
+.div{height:.5px;background:var(--border);margin:18px 0}
+
+/* RESULT CARDS */
+.rc3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:12px}
+.rc{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);padding:13px 14px}
+.rc.gld{background:var(--gold-bg);border-color:var(--gold)}
+.rl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;font-weight:600}
+.rc.gld .rl{color:rgba(201,168,76,.65)}
+.rv{font-size:18px;font-weight:700;color:var(--text);line-height:1.2}
+.rc.gld .rv{color:var(--gold)}
+.rs{font-size:11px;color:var(--text3);margin-top:3px}
+.rc.gld .rs{color:rgba(201,168,76,.45)}
+
+/* STAT ROWS */
+.sr{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--border2);flex-shrink:0}
+.dot.g{background:var(--green)}.dot.o{background:var(--amber)}.dot.r{background:var(--red)}
+.st{font-size:13px;color:var(--text2)}
+.sv{font-size:13px;font-weight:600;color:var(--text);margin-left:auto;text-align:right}
+
+/* BAR */
+.bwrap{margin:11px 0}
+.blbl{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600}
+.btrack{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.bfill{height:100%;border-radius:3px;transition:width .3s,background .3s}
+
+/* WARNINGS */
+.warn{border-radius:var(--r);padding:10px 14px;font-size:12px;display:none;margin-top:9px;font-weight:500}
+.warn.on{display:block}
+.warn.y{background:var(--amber-bg);border:.5px solid rgba(204,140,26,.3);color:var(--amber)}
+.warn.r{background:var(--red-bg);border:.5px solid rgba(192,53,53,.3);color:var(--red)}
+
+/* TP */
+.tp-list{display:flex;flex-direction:column;gap:9px;margin-bottom:9px}
+.tp-row{display:grid;grid-template-columns:1fr 1fr auto;gap:9px;align-items:end}
+.tp-row .field{margin:0}
+.rm-btn{
+  width:32px;height:42px;display:flex;align-items:center;justify-content:center;
+  border:.5px solid var(--border);border-radius:var(--r);background:transparent;
+  color:var(--text3);cursor:pointer;margin-top:17px;transition:all .2s;
+  font-size:19px;flex-shrink:0;touch-action:manipulation;
+}
+.rm-btn:hover{color:var(--red);border-color:rgba(192,53,53,.4)}
+.add-btn{
+  display:flex;align-items:center;gap:7px;padding:9px 13px;
+  border:.5px solid var(--border2);border-radius:var(--r);
+  background:transparent;color:var(--text2);font-size:12px;font-weight:600;
+  cursor:pointer;transition:all .2s;margin-bottom:16px;
+  touch-action:manipulation;
+}
+.add-btn:hover{background:var(--bg2)}
+.pct-err{font-size:11px;color:var(--red);display:none;margin-top:-5px;margin-bottom:6px;font-weight:600}
+.pct-err.on{display:block}
+.pct-hint{font-size:11px;color:var(--text3);margin-top:-5px;margin-bottom:6px;min-height:14px}
+
+/* PNL TABLE */
+.th{display:grid;grid-template-columns:22px 1fr 1fr 1fr 56px;gap:5px;padding:0 11px 7px}
+.th span{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.tr{display:grid;grid-template-columns:22px 1fr 1fr 1fr 56px;gap:5px;align-items:center;padding:10px 11px;border-radius:var(--r);border:.5px solid var(--border);background:var(--bg2);margin-bottom:6px}
+.badge{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;flex-shrink:0}
+.badge.sl{background:rgba(192,53,53,.2);color:var(--red)}
+.badge.tp{background:rgba(201,168,76,.18);color:var(--gold)}
+.tc{font-size:12px;color:var(--text2)}
+.tc.v{font-size:12px;font-weight:600;color:var(--text)}
+.tc.p{font-size:12px;font-weight:700;color:var(--green)}
+.tc.l{font-size:12px;font-weight:700;color:var(--red)}
+.tc.m{font-size:11px;color:var(--text3)}
+
+/* SUMMARY CARD */
+.sum{background:var(--gold-bg);border:.5px solid var(--gold);border-radius:var(--rl);padding:15px 17px;display:flex;align-items:center;justify-content:space-between;margin-top:5px}
+.sum-l .sl2{font-size:10px;color:rgba(201,168,76,.65);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;font-weight:700}
+.sum-l .sv2{font-size:22px;font-weight:700;color:var(--gold)}
+.sum-l .ss{font-size:11px;color:rgba(201,168,76,.45);margin-top:3px}
+.pill{font-size:11px;font-weight:700;padding:4px 11px;border-radius:20px}
+.pill.g{background:var(--green-bg);color:var(--green)}
+.pill.o{background:var(--amber-bg);color:var(--amber)}
+.pill.r{background:var(--red-bg);color:var(--red)}
+
+/* VISUAL SETUP SUMMARY */
+.setup-summary{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--rl);padding:15px;margin-top:5px;display:none}
+.setup-summary.on{display:block}
+.ss-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+.ss-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.ss-card{background:var(--bg3);border-radius:var(--r);padding:10px 12px}
+.ss-label{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.ss-val{font-size:14px;font-weight:700;color:var(--text)}
+.ss-val.gold{color:var(--gold)}
+.ss-val.green{color:var(--green)}
+.ss-val.red{color:var(--red)}
+.ss-val.amber{color:var(--amber)}
+.ss-levels{display:flex;align-items:center;gap:0;margin-top:4px;position:relative;height:36px}
+.ss-bar{flex:1;height:4px;background:var(--border2);position:relative;top:16px}
+.ss-marker{position:absolute;display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateX(-50%)}
+.ss-marker-line{width:2px;height:12px;border-radius:1px}
+.ss-marker-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--bg2)}
+.ss-marker-label{font-size:8px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
+.ss-verdict{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r);margin-top:4px}
+.ss-verdict.good{background:var(--green-bg);border:.5px solid rgba(106,176,42,.25)}
+.ss-verdict.ok{background:var(--amber-bg);border:.5px solid rgba(204,140,26,.25)}
+.ss-verdict.bad{background:var(--red-bg);border:.5px solid rgba(192,53,53,.25)}
+.ss-verdict-icon{font-size:18px}
+.ss-verdict-text{font-size:12px;font-weight:600}
+.ss-verdict.good .ss-verdict-text{color:var(--green)}
+.ss-verdict.ok .ss-verdict-text{color:var(--amber)}
+.ss-verdict.bad .ss-verdict-text{color:var(--red)}
+
+/* HISTORY */
+.hist-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.hist-count{font-size:11px;color:var(--text3);font-weight:600}
+.clear-btn{padding:7px 12px;border:.5px solid rgba(192,53,53,.3);border-radius:var(--r);background:transparent;color:var(--red);font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation}
+.clear-btn:hover{background:var(--red-bg)}
+.h-row{padding:13px 15px;border:.5px solid var(--border);border-radius:var(--r);margin-bottom:9px}
+.h-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;flex-wrap:wrap;gap:5px}
+.h-asset{font-size:11px;font-weight:700;color:var(--gold);background:var(--gold-dim);padding:3px 9px;border-radius:10px}
+.h-dir{font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px}
+.h-dir.long{color:var(--green);background:var(--green-bg)}
+.h-dir.short{color:var(--red);background:var(--red-bg)}
+.h-time{font-size:11px;color:var(--text3)}
+.h-stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
+.h-stat .hl{font-size:10px;color:var(--text3);font-weight:600}
+.h-stat .hv{font-size:13px;font-weight:700;color:var(--text)}
+.hist-empty{text-align:center;padding:3rem 1rem;color:var(--text3);font-size:13px;line-height:1.9}
+
+/* SIM */
+.rr-big{font-size:28px;font-weight:700;color:var(--gold);margin-bottom:4px}
+.sim-chart{display:flex;flex-direction:column;gap:5px;margin:13px 0}
+.sim-bar-row{display:flex;align-items:center;gap:9px}
+.sim-lbl{font-size:11px;color:var(--text2);min-width:48px;text-align:right;font-weight:600}
+.sim-track{flex:1;height:26px;background:var(--bg3);border-radius:4px;overflow:hidden;border:.5px solid var(--border)}
+.sim-fill{height:100%;border-radius:4px;transition:width .35s;display:flex;align-items:center;padding-left:9px}
+.sim-fill span{font-size:10px;font-weight:700;white-space:nowrap}
+.sim-note{font-size:13px;color:var(--text2);margin-top:13px;padding:13px;background:var(--bg2);border-radius:var(--r);line-height:1.7}
+.sim-note strong{color:var(--text);font-weight:700}
+
+/* TOOLTIP */
+.tip{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--bg3);border:.5px solid var(--border2);font-size:9px;font-weight:700;color:var(--text3);cursor:help;position:relative;flex-shrink:0}
+.tip:hover::after{content:attr(data-tip);position:absolute;left:20px;top:-4px;background:#2c2c2c;color:#e8e8e8;font-size:11px;font-weight:400;padding:7px 11px;border-radius:7px;white-space:normal;max-width:210px;z-index:99;line-height:1.5;border:.5px solid var(--border2);min-width:160px}
+
+/* FOOTER */
+.footer{margin-top:3rem;padding-top:1.25rem;border-top:.5px solid var(--border);text-align:center;font-size:11px;color:var(--text3);line-height:1.9}
+.footer a{color:var(--gold);text-decoration:none;font-weight:600}
+
+/* MOBILE OPTIMIZATIONS */
+@media(max-width:600px){
+  .page{padding:1.25rem .85rem 5rem}
+  .g2{grid-template-columns:1fr 1fr;gap:10px}
+  .rc3{grid-template-columns:1fr 1fr;gap:8px}
+  .rc3 .rc:last-child{grid-column:span 2}
+  .g4{grid-template-columns:repeat(2,1fr);gap:7px}
+  .ex-grid{grid-template-columns:repeat(2,1fr);gap:6px}
+  .th,.tr{grid-template-columns:20px 1fr 1fr 1fr}
+  .th span:last-child,.tr .tc:last-child{display:none}
+  .h-stats{grid-template-columns:1fr 1fr}
+  .ss-grid{grid-template-columns:1fr 1fr}
+  .ss-grid .ss-card:last-child{grid-column:span 2}
+  .rv{font-size:16px}
+  .sum-l .sv2{font-size:19px}
+  .ls-btn{font-size:12px;padding:10px}
+  .tp-row{grid-template-columns:1fr 1fr auto;gap:7px}
+}
+@media(max-width:380px){
+  .g4{grid-template-columns:repeat(2,1fr)}
+  .ex-grid{grid-template-columns:repeat(2,1fr)}
+  .brand-text h1{font-size:14px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="brand">
+    <div class="brand-bar"></div>
+    <div class="brand-text">
+      <h1>Morani Position Size Calculator</h1>
+      <p>moranitraden.nl — professioneel risicobeheer</p>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" onclick="showTab('calc')">Calculator</button>
+    <button class="tab" onclick="showTab('history')">Trade history</button>
+    <button class="tab" onclick="showTab('sim')">Winrate sim</button>
+  </div>
+
+  <!-- CALCULATOR -->
+  <div class="panel on" id="tab-calc">
+
+    <div class="sec" style="margin-top:0">Asset</div>
+    <div class="g4" id="ag"></div>
+    <div class="info-box" id="ibox"></div>
+    <div class="pair-row" id="pair-row">
+      <div class="field">
+        <label>Forex pair <span class="tip" data-tip="Kies je valutapaar. Pip waarde wordt automatisch ingesteld.">?</span></label>
+        <div class="ir">
+          <span class="sym">⇄</span>
+          <select id="forex-pair" onchange="onPairChange()">
+            <option value="eurusd">EUR/USD · pip = $10.00/lot</option>
+            <option value="gbpusd">GBP/USD · pip = $10.00/lot</option>
+            <option value="audusd">AUD/USD · pip = $10.00/lot</option>
+            <option value="nzdusd">NZD/USD · pip = $10.00/lot</option>
+            <option value="usdcad">USD/CAD · pip ≈ $7.50/lot</option>
+            <option value="usdchf">USD/CHF · pip ≈ $11.00/lot</option>
+            <option value="usdjpy">USD/JPY · pip ≈ $6.50/lot</option>
+            <option value="eurjpy">EUR/JPY · pip ≈ $6.50/lot</option>
+            <option value="gbpjpy">GBP/JPY · pip ≈ $6.50/lot</option>
+            <option value="euraud">EUR/AUD · pip ≈ $6.50/lot</option>
+            <option value="eurgbp">EUR/GBP · pip ≈ $12.50/lot</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">Richting</div>
+    <div class="ls-wrap">
+      <button class="ls-btn long on" id="btn-long" onclick="setDir('long')">▲ Long</button>
+      <button class="ls-btn short" id="btn-short" onclick="setDir('short')">▼ Short</button>
+    </div>
+
+    <div class="sec">Account & risico</div>
+    <div class="g2">
+      <div class="field">
+        <label>Account balans <span class="tip" data-tip="Je totale account balans in USD.">?</span></label>
+        <div class="ir"><span class="sym">$</span><input type="number" id="balance" value="" min="0" inputmode="decimal" oninput="calc()"></div>
+      </div>
+      <div class="field">
+        <label>Risico per trade <span class="tip" data-tip="Professionals: 0.5%–2%. Funded accounts: max 1% vanwege dagelijkse drawdown limieten.">?</span></label>
+        <div class="ir"><span class="sym">%</span><input type="number" id="risk_pct" value="" min="0.01" max="100" step="0.1" inputmode="decimal" oninput="calc()"></div>
+        <span class="hint">Aanbevolen: 0.5% – 2%</span>
+      </div>
+    </div>
+
+    <div class="sec">Exchange & commissie</div>
+    <div class="ex-grid" id="exchange-grid"></div>
+    <div class="fee-type-wrap" id="fee-type-row">
+      <button class="ft-btn on" id="ft-taker" onclick="setFeeType('taker')">Taker — market order</button>
+      <button class="ft-btn" id="ft-maker" onclick="setFeeType('maker')">Maker — limit order</button>
+    </div>
+    <div class="fee-box">
+      <div>
+        <div class="fl">Commissie round-trip (open + close)</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px" id="fee-breakdown">—</div>
+      </div>
+      <div class="fv" id="fee-display">—</div>
+    </div>
+
+    <!-- SPREAD: alleen zichtbaar bij forex en goud -->
+    <div class="spread-row" id="spread-row">
+      <div class="field" style="margin-top:10px">
+        <label>Spread <span class="tip" data-tip="Verschil tussen bid en ask in pips/punten. Optioneel.">?</span></label>
+        <div class="ir"><span class="sym" id="spread-sym">pip</span><input type="number" id="spread" value="0" min="0" step="0.1" placeholder="0.0" inputmode="decimal" oninput="calc()"></div>
+        <span class="hint">In pips/punten — optioneel</span>
+      </div>
+    </div>
+
+    <div class="sec">Prijsniveaus</div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="field">
+        <label>Entry prijs <span class="tip" data-tip="De prijs waartegen je de positie opent.">?</span></label>
+        <div class="ir"><span class="sym" id="sym-e">$</span><input type="number" id="entry" value="" min="0" step="any" inputmode="decimal" oninput="calc()"></div>
+      </div>
+      <div class="field">
+        <label>Stop loss prijs <span class="tip" data-tip="Baseer je SL altijd op een technisch niveau — nooit op een willekeurig %.">?</span></label>
+        <div class="ir"><span class="sym" id="sym-sl">$</span><input type="number" id="sl_price" value="" min="0" step="any" inputmode="decimal" oninput="calc()"></div>
+        <span class="hint" id="sl-hint-txt">Onder entry (long)</span>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="field">
+        <label>Leverage <span class="tip" data-tip="Hefboom. Vergroot positie maar ook risico.">?</span></label>
+        <div class="ir"><span class="sym">×</span><input type="number" id="leverage" value="" min="1" max="500" step="1" inputmode="numeric" oninput="calc()"></div>
+        <span class="hint" id="lev-hint">10× – 50× voor perps</span>
+      </div>
+    </div>
+
+    <div class="sec">Take profits</div>
+    <div class="tp-list" id="tp-list"></div>
+    <div class="pct-err" id="pct-err">⚠ Totaal % overschrijdt 100%</div>
+    <div class="pct-hint" id="pct-hint"></div>
+    <button class="add-btn" onclick="addTp()">+ Take profit toevoegen</button>
+
+    <div class="sec">Uitkomst</div>
+    <div class="rc3">
+      <div class="rc gld">
+        <div class="rl" id="main-lbl">Positiegrootte</div>
+        <div class="rv" id="pos_size">—</div>
+        <div class="rs" id="pos_sub">—</div>
+      </div>
+      <div class="rc">
+        <div class="rl" id="qty-lbl">Hoeveelheid</div>
+        <div class="rv" id="qty">—</div>
+        <div class="rs" id="qty-unit">—</div>
+      </div>
+      <div class="rc">
+        <div class="rl">Effectief risico</div>
+        <div class="rv" id="risk_amt">—</div>
+        <div class="rs" id="risk_sub">incl. kosten</div>
+      </div>
+    </div>
+
+    <div class="bwrap">
+      <div class="blbl"><span>Risico van balans</span><span id="bar-lbl">—</span></div>
+      <div class="btrack"><div class="bfill" id="bar" style="width:0%"></div></div>
+    </div>
+
+    <div class="div"></div>
+    <div class="sr"><div class="dot" id="sl-dot"></div><div class="st">Stop loss afstand</div><div class="sv" id="sl-dist">—</div></div>
+    <div class="sr" id="pip-row" style="display:none"><div class="dot"></div><div class="st">SL in pips/punten</div><div class="sv" id="sl-pips">—</div></div>
+    <div class="sr"><div class="dot"></div><div class="st">Vereiste marge</div><div class="sv" id="margin">—</div></div>
+    <div class="sr" id="cost-row" style="display:none"><div class="dot r"></div><div class="st">Commissie (round-trip)</div><div class="sv" id="cost-val">—</div></div>
+
+    <!-- TP TABLE -->
+    <div id="tp-section" style="display:none">
+      <div class="div"></div>
+      <div class="sec" style="margin-top:0;margin-bottom:9px">PnL per take profit</div>
+      <div class="th"><span></span><span>Prijs</span><span id="th-qty">Qty / %</span><span>Winst</span><span>R/R</span></div>
+      <div id="tp-tbl"></div>
+      <div class="sum">
+        <div class="sum-l">
+          <div class="sl2">Totale winst alle TPs</div>
+          <div class="sv2" id="total-profit">—</div>
+          <div class="ss" id="total-sub">—</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <div class="pill" id="rr-pill">R/R —</div>
+          <div style="font-size:10px;color:rgba(201,168,76,.45);font-weight:600">gewogen gemiddelde</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISUELE SETUP SAMENVATTING -->
+    <div class="setup-summary" id="setup-summary">
+      <div class="ss-title">Setup samenvatting</div>
+      <div class="ss-grid">
+        <div class="ss-card">
+          <div class="ss-label">Positiegrootte</div>
+          <div class="ss-val gold" id="ss-pos">—</div>
+        </div>
+        <div class="ss-card">
+          <div class="ss-label">Max verlies</div>
+          <div class="ss-val red" id="ss-loss">—</div>
+        </div>
+        <div class="ss-card">
+          <div class="ss-label">Potentiële winst</div>
+          <div class="ss-val green" id="ss-profit">—</div>
+        </div>
+        <div class="ss-card">
+          <div class="ss-label">R/R ratio</div>
+          <div class="ss-val" id="ss-rr">—</div>
+        </div>
+        <div class="ss-card">
+          <div class="ss-label">SL afstand</div>
+          <div class="ss-val" id="ss-sl">—</div>
+        </div>
+        <div class="ss-card">
+          <div class="ss-label">Commissie</div>
+          <div class="ss-val amber" id="ss-comm">—</div>
+        </div>
+      </div>
+      <!-- Visuele prijsniveaus balk -->
+      <div id="ss-levels-wrap" style="display:none">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Prijsniveaus</div>
+        <div style="position:relative;padding:18px 0 22px">
+          <div style="height:3px;background:var(--border2);border-radius:2px;position:relative">
+            <div id="sl-marker" style="position:absolute;display:flex;flex-direction:column;align-items:center;gap:3px;transform:translateX(-50%)">
+              <div style="font-size:9px;font-weight:700;color:var(--red);white-space:nowrap" id="sl-lbl-txt">SL</div>
+              <div style="width:2px;height:10px;background:var(--red);border-radius:1px"></div>
+              <div style="width:9px;height:9px;border-radius:50%;background:var(--red)"></div>
+            </div>
+            <div id="entry-marker" style="position:absolute;display:flex;flex-direction:column;align-items:center;gap:3px;transform:translateX(-50%)">
+              <div style="font-size:9px;font-weight:700;color:var(--gold);white-space:nowrap">Entry</div>
+              <div style="width:2px;height:10px;background:var(--gold);border-radius:1px"></div>
+              <div style="width:9px;height:9px;border-radius:50%;background:var(--gold)"></div>
+            </div>
+            <div id="tp-markers"></div>
+          </div>
+        </div>
+      </div>
+      <div class="ss-verdict" id="ss-verdict">
+        <span class="ss-verdict-icon" id="ss-icon">—</span>
+        <span class="ss-verdict-text" id="ss-text">—</span>
+      </div>
+    </div>
+
+    <div class="warn y" id="w-risk">⚠ Risico boven 2% — professionals riskeren nooit meer dan 2% per trade.</div>
+    <div class="warn r" id="w-eq">⚠ Stop loss en entry zijn gelijk — geen geldige stop loss.</div>
+    <div class="warn y" id="w-rr">⚠ R/R onder 1:1 — onvoldoende potentieel ten opzichte van het risico.</div>
+    <div class="warn y" id="w-cost">⚠ Commissie slokt meer dan 10% van je risico op.</div>
+    <div class="warn y" id="w-funded">⚠ Funded account: risico boven 1% verhoogt kans op dagelijkse drawdown overschrijding.</div>
+
+    <button class="btn-primary" onclick="saveTrade()">💾 Sla op in trade history</button>
+    <button class="btn-secondary" onclick="resetAll()">↺ Reset calculator</button>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="panel" id="tab-history">
+    <div class="hist-meta">
+      <span class="hist-count" id="hist-count">0 / 200 trades opgeslagen</span>
+      <button class="clear-btn" onclick="clearHistory()">🗑 Wis alles</button>
+    </div>
+    <div id="hist-list"></div>
+  </div>
+
+  <!-- WINRATE SIM -->
+  <div class="panel" id="tab-sim">
+    <div class="sec" style="margin-top:0">R/R uit huidige setup</div>
+    <div class="rr-big" id="sim-rr-display">—</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:16px;font-weight:500">Bereken eerst een setup in de calculator tab</div>
+    <div class="sec">Stel handmatig in</div>
+    <div class="field" style="margin-bottom:16px">
+      <label>R/R ratio (1 : X)</label>
+      <div class="ir"><span class="sym">1:</span><input type="number" id="sim-rr" value="" min="0.1" step="0.1" inputmode="decimal" oninput="renderSim()"></div>
+      <span class="hint">Minimale winrate = 1 ÷ (1 + R/R)</span>
+    </div>
+    <div class="sec">Minimale winrate per stijl</div>
+    <div class="sim-chart" id="sim-chart"></div>
+    <div class="sim-note" id="sim-note"></div>
+  </div>
+
+  <div class="footer">
+    Gebouwd door <a href="https://moranitraden.nl" target="_blank">moranitraden.nl</a><br>
+    Geen financieel advies. Gebruik altijd je eigen oordeel en risicomanagement.
+  </div>
+</div>
+
+<script>
+// ── ASSET ICONS ───────────────────────────────────────────────
+const ICONS={
+  crypto:`<svg width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#F7931A" opacity="0.18"/><text x="16" y="22" text-anchor="middle" font-size="17" font-family="Arial" font-weight="800" fill="#F7931A">₿</text></svg>`,
+  gold:`<svg width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#FFD700" opacity="0.18"/><rect x="7" y="12" width="18" height="11" rx="2.5" fill="#FFD700" opacity="0.95"/><rect x="11" y="8" width="10" height="5" rx="1.5" fill="#FFD700" opacity="0.75"/><text x="16" y="21" text-anchor="middle" font-size="6.5" font-family="Arial" font-weight="800" fill="#3d2c00">XAU</text></svg>`,
+  forex:`<svg width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#2196F3" opacity="0.18"/><text x="10" y="20" text-anchor="middle" font-size="13" font-family="Arial" font-weight="800" fill="#2196F3">€</text><text x="23" y="20" text-anchor="middle" font-size="13" font-family="Arial" font-weight="800" fill="#4CAF50">$</text><line x1="16.5" y1="9" x2="16.5" y2="23" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/></svg>`,
+  indices:`<svg width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#9C27B0" opacity="0.18"/><polyline points="5,23 10,15 15,18 21,9 27,13" stroke="#9C27B0" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+};
+
+// ── DATA ──────────────────────────────────────────────────────
+const FOREX_PAIRS={
+  eurusd:{label:'EUR/USD',pip:0.0001,pv:10},gbpusd:{label:'GBP/USD',pip:0.0001,pv:10},
+  audusd:{label:'AUD/USD',pip:0.0001,pv:10},nzdusd:{label:'NZD/USD',pip:0.0001,pv:10},
+  usdcad:{label:'USD/CAD',pip:0.0001,pv:7.50},usdchf:{label:'USD/CHF',pip:0.0001,pv:11},
+  usdjpy:{label:'USD/JPY',pip:0.01,pv:6.50},eurjpy:{label:'EUR/JPY',pip:0.01,pv:6.50},
+  gbpjpy:{label:'GBP/JPY',pip:0.01,pv:6.50},euraud:{label:'EUR/AUD',pip:0.0001,pv:6.50},
+  eurgbp:{label:'EUR/GBP',pip:0.0001,pv:12.50}
+};
+
+// Commissie als % van notionele waarde per kant
+// Kraken futures: taker 0.04%, maker 0.015% (bron: kraken.com/features/fee-schedule)
+const EXCHANGES=[
+  {id:'okx',    name:'OKX',    taker:0.0005,  maker:0.0002,  note:'Futures',   hasMT:true,  isFunded:false},
+  {id:'kraken', name:'Kraken', taker:0.0004,  maker:0.00015, note:'Futures',   hasMT:true,  isFunded:false},
+  {id:'bybit',  name:'Bybit',  taker:0.00055, maker:0.0002,  note:'Perps',     hasMT:true,  isFunded:false},
+  {id:'funded', name:'Funded', taker:0.00065, maker:0.00065, note:'Prop firm', hasMT:false, isFunded:true,
+   info:'Gem. gebaseerd op FTMO: crypto 0.065% r/t, forex ~$3/lot, indices 0% commissie'}
+];
+
+// useSpread: of het spread veld zichtbaar is voor dit asset
+const ASSETS=[
+  {id:'crypto',  icon:'crypto',  name:'Crypto',  sub:'BTC/ETH perps',mode:'crypto',sym:'$',unit:'BTC',      entry:0, sl:0, tp:0, lev:10,levH:'10×–50× voor perps',  dec:4,useSpread:false,info:null},
+  {id:'gold',    icon:'gold',    name:'Goud',    sub:'XAU/USD',      mode:'lot',  sym:'$',unit:'lots',     entry:0, sl:0, tp:0,  lev:1, levH:'1×–20× voor goud',    dec:2,useSpread:true, pipSize:0.01,  pipVal:1,  lotSize:100,   info:'1 lot = 100 troy oz · $1 pip waarde per lot'},
+  {id:'forex',   icon:'forex',   name:'Forex',   sub:'EUR/USD etc.', mode:'lot',  sym:'', unit:'lots',     entry:0, sl:0, tp:0,lev:30,levH:'10×–100× voor forex',  dec:5,useSpread:true, pipSize:0.0001,pipVal:10, lotSize:100000,info:null},
+  {id:'indices', icon:'indices', name:'Indices', sub:'S&P / NQ',     mode:'crypto',sym:'$',unit:'contracts',entry:0, sl:0, tp:0,  lev:1, levH:'1×–20× voor indices',  dec:2,useSpread:false,info:null}
+];
+
+let asset=ASSETS[0],dir="long",tps=[{price:0,pct:100}];
+let exchId='okx',feeType='taker',lastWeightedRR=0,lastTotProfit=0,lastEffRisk=0,lastPosSize=0;
+let history=[];
+try{history=JSON.parse(localStorage.getItem('morani_hist_v2')||'[]');}catch(e){history=[];}
+
+// ── TABS ──────────────────────────────────────────────────────
+function showTab(t){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  ['calc','history','sim'].forEach((id,i)=>{
+    if(id===t){document.querySelectorAll('.tab')[i].classList.add('on');document.getElementById('tab-'+id).classList.add('on');}
+  });
+  if(t==='history')renderHistory();
+  if(t==='sim')renderSim();
+}
+
+// ── ASSETS ────────────────────────────────────────────────────
+function buildAssets(){
+  const g=document.getElementById('ag');g.innerHTML='';
+  ASSETS.forEach(a=>{
+    const b=document.createElement('button');b.className='ab'+(a.id===asset.id?' on':'');
+    b.innerHTML=`<div class="ab-icon">${ICONS[a.icon]}</div><span class="ab-name">${a.name}</span><span class="ab-sub">${a.sub}</span>`;
+    b.onclick=()=>selAsset(a);g.appendChild(b);
+  });
+}
+
+function selAsset(a){
+  asset=a;
+  document.getElementById('entry').value='';
+  document.getElementById('sl_price').value='';
+  document.getElementById('leverage').value='';
+  document.getElementById('lev-hint').textContent=a.levH;
+  document.getElementById('sym-e').textContent=a.sym||'—';
+  document.getElementById('sym-sl').textContent=a.sym||'—';
+  // Spread row: alleen zichtbaar bij forex en goud
+  document.getElementById('spread-row').classList.toggle('show',a.useSpread);
+  document.getElementById('spread').value=0;
+  // Pair row
+  const pr=document.getElementById('pair-row'),ib=document.getElementById('ibox');
+  if(a.id==='forex'){pr.classList.add('show');onPairChange();}else{pr.classList.remove('show');}
+  if(a.info){ib.textContent=a.info;ib.classList.add('on');}else{ib.classList.remove('on');}
+  tps=[{price:0,pct:100}];
+  buildAssets();renderTps();updateFeeTypeVis();calc();
+}
+
+function onPairChange(){
+  const p=FOREX_PAIRS[document.getElementById('forex-pair').value];
+  asset={...asset,pipSize:p.pip,pipVal:p.pv};
+  const ib=document.getElementById('ibox');
+  ib.textContent=p.label+' · pip waarde = $'+p.pv.toFixed(2)+'/lot';ib.classList.add('on');calc();
+}
+
+// ── EXCHANGE ──────────────────────────────────────────────────
+function buildExchanges(){
+  const g=document.getElementById('exchange-grid');g.innerHTML='';
+  EXCHANGES.forEach(e=>{
+    const b=document.createElement('button');b.className='ex-btn'+(e.id===exchId?' on':'');
+    b.innerHTML=`<span class="ex-name">${e.name}</span><span class="ex-fee">${e.note}</span>`;
+    b.onclick=()=>{exchId=e.id;buildExchanges();updateFeeTypeVis();calc();};g.appendChild(b);
+  });
+}
+
+function updateFeeTypeVis(){
+  const exc=EXCHANGES.find(e=>e.id===exchId)||EXCHANGES[0];
+  const ftr=document.getElementById('fee-type-row');
+  ftr.style.display=exc.hasMT?'flex':'none';
+  const ib=document.getElementById('ibox');
+  if(exc.isFunded&&exc.info){ib.textContent=exc.info;ib.classList.add('on');}
+  else if(!exc.isFunded&&asset.info){ib.textContent=asset.info;ib.classList.add('on');}
+  else if(!exc.isFunded){ib.classList.remove('on');}
+}
+
+function setFeeType(t){
+  feeType=t;
+  document.getElementById('ft-taker').classList.toggle('on',t==='taker');
+  document.getElementById('ft-maker').classList.toggle('on',t==='maker');calc();
+}
+function getExchFee(){const e=EXCHANGES.find(x=>x.id===exchId)||EXCHANGES[0];return feeType==='maker'?e.maker:e.taker;}
+
+// ── DIRECTION ─────────────────────────────────────────────────
+function setDir(d){
+  dir=d;
+  document.getElementById('btn-long').classList.toggle('on',d==='long');
+  document.getElementById('btn-short').classList.toggle('on',d==='short');
+  document.getElementById('sl-hint-txt').textContent=d==='long'?'Onder entry (long)':'Boven entry (short)';calc();
+}
+
+// ── TP ROWS ───────────────────────────────────────────────────
+function addTp(){
+  const rem=100-tps.reduce((s,t)=>s+(t.pct||0),0);
+  tps.push({price:0,pct:Math.max(0,Math.round(rem))});renderTps();calc();
+}
+function rmTp(i){tps.splice(i,1);renderTps();calc();}
+function renderTps(){
+  const list=document.getElementById('tp-list');list.innerHTML='';
+  const sym=asset.sym||'';
+  tps.forEach((tp,i)=>{
+    const d=document.createElement('div');d.className='tp-row';
+    d.innerHTML=`
+      <div class="field"><label>TP ${i+1} prijs</label>
+        <div class="ir"><span class="sym">${sym||'—'}</span>
+          <input type="number" value="${tp.price||''}" min="0" step="any" placeholder="0.00" inputmode="decimal" oninput="tps[${i}].price=parseFloat(this.value)||0;calc()">
+        </div>
+      </div>
+      <div class="field"><label>Sluit hier</label>
+        <div class="ir"><span class="sym">%</span>
+          <input type="number" value="${tp.pct||''}" min="0" max="100" step="1" placeholder="0" inputmode="numeric" oninput="tps[${i}].pct=parseFloat(this.value)||0;calc()">
+        </div>
+      </div>
+      ${tps.length>1?`<button class="rm-btn" onclick="rmTp(${i})">×</button>`:'<div></div>'}
+    `;list.appendChild(d);
+  });
+}
+
+function resetAll(){
+  tps=[{price:asset.tp,pct:100}];
+  document.getElementById('entry').value='';
+  document.getElementById('sl_price').value='';
+  document.getElementById('leverage').value='';
+  document.getElementById('balance').value='';
+  document.getElementById('risk_pct').value='';
+  document.getElementById('spread').value=0;
+  renderTps();calc();
+}
+
+// ── CORE CALC ─────────────────────────────────────────────────
+function calc(){
+  const balance=parseFloat(document.getElementById('balance').value)||0;
+  const riskPct=parseFloat(document.getElementById('risk_pct').value)||0;
+  const entry=parseFloat(document.getElementById('entry').value)||0;
+  const slP=parseFloat(document.getElementById('sl_price').value)||0;
+  const lev=Math.max(1,parseFloat(document.getElementById('leverage').value)||1);
+  // Spread alleen ophalen als het veld zichtbaar is
+  const spreadPips=asset.useSpread?(parseFloat(document.getElementById('spread').value)||0):0;
+  const a=asset,sym=a.sym||'',feeRate=getExchFee();
+  const isFunded=EXCHANGES.find(e=>e.id===exchId)?.isFunded||false;
+
+  const baseRisk=balance*(riskPct/100);
+  const slDist=entry>0&&slP>0?Math.abs(entry-slP):0;
+  const slDistPct=entry>0?slDist/entry*100:0;
+
+  let posSize=0,qty=0,commCost=0,effectiveRisk=0;
+
+  if(a.mode==='lot'){
+    // Forex/Goud: berekening via pips en pip waarde
+    const pips=a.pipSize?slDist/a.pipSize:0;
+    const spreadCostLot=spreadPips*(a.pipVal||0);
+    const lots=pips>0?Math.max(0,baseRisk-spreadCostLot)/(pips*a.pipVal):0;
+    posSize=lots*a.lotSize*entry;qty=lots;
+    commCost=posSize*feeRate*2;effectiveRisk=baseRisk+commCost;
+  } else {
+    // Crypto/Indices: berekening puur op $ waarde — geen pips
+    // posSize = riskAmt / (SL% van entry)
+    const sd=slDistPct/100;
+    posSize=sd>0?baseRisk/sd:0;qty=entry>0?posSize/entry:0;
+    commCost=posSize*feeRate*2;effectiveRisk=baseRisk+commCost;
+  }
+
+  const margin=posSize/lev,effectivePct=balance>0?effectiveRisk/balance*100:0;
+  lastEffRisk=effectiveRisk;lastPosSize=posSize;
+
+  // Fee display
+  document.getElementById('fee-display').textContent=posSize>0?'$'+commCost.toFixed(2):'—';
+  document.getElementById('fee-breakdown').textContent=posSize>0
+    ?((feeRate*2*100).toFixed(3)+'% × $'+Math.round(posSize).toLocaleString('nl-NL'))
+    :'Vul prijsniveaus in';
+
+  // Output kaarten
+  if(a.mode==='lot'){
+    document.getElementById('main-lbl').textContent='Lot size';
+    document.getElementById('pos_size').textContent=qty>0?qty.toFixed(2)+' lots':'—';
+    document.getElementById('pos_sub').textContent=qty>0?(qty*(a.id==='gold'?100:100000)).toLocaleString('nl-NL',{maximumFractionDigits:0})+' '+(a.id==='gold'?'oz':'eenheden'):'—';
+    document.getElementById('qty-lbl').textContent='Notioneel';
+    document.getElementById('qty').textContent=posSize>0?sym+Math.round(posSize).toLocaleString('nl-NL'):'—';
+    document.getElementById('qty-unit').textContent=lev>1?'marge: $'+Math.round(margin).toLocaleString('nl-NL'):'geen leverage';
+    document.getElementById('th-qty').textContent='Lots / %';
+  } else {
+    document.getElementById('main-lbl').textContent='Positiegrootte';
+    document.getElementById('pos_size').textContent=posSize>0?sym+Math.round(posSize).toLocaleString('nl-NL'):'—';
+    document.getElementById('pos_sub').textContent=lev>1?'notioneel ('+lev+'×)':'in USD';
+    document.getElementById('qty-lbl').textContent='Hoeveelheid ('+a.unit+')';
+    document.getElementById('qty').textContent=qty>0?qty.toFixed(a.dec):'—';
+    document.getElementById('qty-unit').textContent=a.unit;
+    document.getElementById('th-qty').textContent='Qty / %';
+  }
+
+  document.getElementById('risk_amt').textContent=effectiveRisk>0?'$'+effectiveRisk.toFixed(2):'—';
+  document.getElementById('risk_sub').textContent=commCost>0.01?'incl. $'+commCost.toFixed(2)+' comm.':'excl. commissie';
+
+  const bc=effectivePct<=1?'#6ab02a':effectivePct<=2?'#cc8c1a':'#c03535';
+  document.getElementById('bar').style.width=Math.min(effectivePct/10*100,100)+'%';
+  document.getElementById('bar').style.background=bc;
+  document.getElementById('bar-lbl').textContent=effectivePct.toFixed(2)+'%';
+
+  document.getElementById('sl-dist').textContent=slDist>0
+    ?slDistPct.toFixed(2)+'%  ($'+slDist.toLocaleString('nl-NL',{maximumFractionDigits:a.dec})+')'
+    :'—';
+  document.getElementById('sl-dot').className='dot '+(slDistPct>5?'r':slDistPct>2?'o':'g');
+  document.getElementById('margin').textContent=lev>1?'$'+Math.round(margin).toLocaleString('nl-NL')+' ('+lev+'×)':'n.v.t.';
+
+  // Pip rij: alleen bij lot mode
+  const pipRow=document.getElementById('pip-row');
+  if(a.mode==='lot'&&slDist>0){
+    const pips=Math.round(slDist/(a.pipSize||0.0001));
+    document.getElementById('sl-pips').textContent=pips+' '+(a.id==='forex'?'pips':'punten')+' · $'+a.pipVal+'/lot';
+    pipRow.style.display='flex';
+  }else{pipRow.style.display='none';}
+
+  const costRow=document.getElementById('cost-row');
+  if(commCost>0.01){document.getElementById('cost-val').textContent='$'+commCost.toFixed(2);costRow.style.display='flex';}
+  else{costRow.style.display='none';}
+
+  // Warnings
+  document.getElementById('w-risk').classList.toggle('on',effectivePct>2&&!isFunded);
+  document.getElementById('w-funded').classList.toggle('on',isFunded&&riskPct>1);
+  document.getElementById('w-eq').classList.toggle('on',entry>0&&slP>0&&entry===slP);
+  document.getElementById('w-cost').classList.toggle('on',baseRisk>0&&commCost/baseRisk>0.1);
+
+  // TP table
+  const totalPct=tps.reduce((s,t)=>s+(t.pct||0),0);
+  document.getElementById('pct-err').classList.toggle('on',totalPct>100.01);
+  document.getElementById('pct-hint').textContent=Math.round(100-totalPct)>0?'Nog '+Math.round(100-totalPct)+'% toe te wijzen.':'';
+
+  const validTps=tps.filter(t=>t.price>0&&t.pct>0);
+  const sec=document.getElementById('tp-section');
+  const sumDiv=document.getElementById('setup-summary');
+  if(validTps.length===0||qty===0){sec.style.display='none';sumDiv.classList.remove('on');lastWeightedRR=0;lastTotProfit=0;return;}
+  sec.style.display='block';
+
+  const tbl=document.getElementById('tp-tbl');tbl.innerHTML='';
+  const slRow=document.createElement('div');slRow.className='tr';
+  const slQty=a.mode==='lot'?qty.toFixed(2)+' lots':qty.toFixed(a.dec)+' '+a.unit;
+  slRow.innerHTML=`<div class="badge sl">SL</div><div class="tc v">${sym}${slP>0?slP.toLocaleString('nl-NL',{maximumFractionDigits:a.dec}):'-'}</div><div class="tc m">${slQty}·100%</div><div class="tc l">-$${effectiveRisk.toFixed(2)}</div><div class="tc m">1:0</div>`;
+  tbl.appendChild(slRow);
+
+  let totP=0,wRR=0,wTot=0;
+  tps.forEach((tp,i)=>{
+    if(!tp.price||!tp.pct)return;
+    const frac=tp.pct/100,qc=qty*frac,diff=Math.abs(tp.price-entry);
+    let profit;
+    if(a.mode==='lot'){profit=qc*(diff/(a.pipSize||0.0001))*a.pipVal;}
+    else{profit=qc*diff;} // crypto: qty × prijsverschil in $
+    const net=profit-commCost*frac,rrn=slDist>0?diff/slDist:0;
+    totP+=net;wRR+=rrn*frac;wTot+=frac;
+    const rc=rrn>=2?'#6ab02a':rrn>=1?'#cc8c1a':'#c03535';
+    const qcL=a.mode==='lot'?qc.toFixed(2)+' lots':qc.toFixed(a.dec);
+    const row=document.createElement('div');row.className='tr';
+    row.innerHTML=`<div class="badge tp">T${i+1}</div><div class="tc v">${sym}${tp.price.toLocaleString('nl-NL',{maximumFractionDigits:a.dec})}</div><div class="tc m">${qcL}·${tp.pct}%</div><div class="tc p">+$${Math.round(net).toLocaleString('nl-NL')}</div><div style="font-size:12px;font-weight:700;color:${rc}">1:${rrn.toFixed(2)}</div>`;
+    tbl.appendChild(row);
+  });
+
+  lastWeightedRR=wTot>0?wRR:0;lastTotProfit=totP;
+  document.getElementById('total-profit').textContent='+$'+Math.round(totP).toLocaleString('nl-NL');
+  document.getElementById('total-sub').textContent=Math.round(wTot*100)+'% positie · na commissie';
+  const pill=document.getElementById('rr-pill');
+  pill.textContent='R/R 1:'+lastWeightedRR.toFixed(2);
+  pill.className='pill '+(lastWeightedRR>=2?'g':lastWeightedRR>=1?'o':'r');
+  document.getElementById('w-rr').classList.toggle('on',wTot>0&&lastWeightedRR<1);
+
+  // Setup samenvatting
+  renderSetupSummary(entry,slP,qty,posSize,effectiveRisk,totP,commCost,slDistPct,wTot);
+}
+
+// ── SETUP SAMENVATTING ────────────────────────────────────────
+function renderSetupSummary(entry,slP,qty,posSize,effRisk,totProfit,commCost,slDistPct,wTot){
+  const a=asset,sym=a.sym||'';
+  const sumDiv=document.getElementById('setup-summary');
+  sumDiv.classList.add('on');
+
+  // Kaarten
+  document.getElementById('ss-pos').textContent=
+    a.mode==='lot'?(qty>0?qty.toFixed(2)+' lots':'—'):(posSize>0?sym+Math.round(posSize).toLocaleString('nl-NL'):'—');
+  document.getElementById('ss-loss').textContent=effRisk>0?'-$'+effRisk.toFixed(2):'—';
+  document.getElementById('ss-profit').textContent=totProfit>0?'+$'+Math.round(totProfit).toLocaleString('nl-NL'):'—';
+  const rrEl=document.getElementById('ss-rr');
+  if(lastWeightedRR>0){
+    rrEl.textContent='1 : '+lastWeightedRR.toFixed(2);
+    rrEl.className='ss-val '+(lastWeightedRR>=2?'green':lastWeightedRR>=1?'amber':'red');
+  }else{rrEl.textContent='—';rrEl.className='ss-val';}
+  document.getElementById('ss-sl').textContent=slDistPct>0?slDistPct.toFixed(2)+'%':'—';
+  document.getElementById('ss-comm').textContent=commCost>0.01?'$'+commCost.toFixed(2):'$0';
+
+  // Prijsniveaus visueel
+  const lvlWrap=document.getElementById('ss-levels-wrap');
+  const validTps=tps.filter(t=>t.price>0&&t.pct>0);
+  if(entry>0&&slP>0&&validTps.length>0){
+    lvlWrap.style.display='block';
+    const allPrices=[slP,entry,...validTps.map(t=>t.price)];
+    const minP=Math.min(...allPrices),maxP=Math.max(...allPrices);
+    const range=maxP-minP||1;
+    const pct=p=>((p-minP)/range*80+10)+'%';
+
+    document.getElementById('sl-marker').style.left=pct(slP);
+    document.getElementById('sl-lbl-txt').textContent='SL $'+slP.toLocaleString('nl-NL',{maximumFractionDigits:0});
+    document.getElementById('entry-marker').style.left=pct(entry);
+
+    const tpM=document.getElementById('tp-markers');tpM.innerHTML='';
+    const tpColors=['#6ab02a','#cc8c1a','#C9A84C','#9C27B0'];
+    validTps.forEach((tp,i)=>{
+      const m=document.createElement('div');
+      m.style.cssText=`position:absolute;left:${pct(tp.price)};display:flex;flex-direction:column;align-items:center;gap:3px;transform:translateX(-50%)`;
+      const c=tpColors[i]||'#6ab02a';
+      m.innerHTML=`<div style="font-size:9px;font-weight:700;color:${c};white-space:nowrap">T${i+1} $${tp.price.toLocaleString('nl-NL',{maximumFractionDigits:0})}</div><div style="width:2px;height:10px;background:${c};border-radius:1px"></div><div style="width:9px;height:9px;border-radius:50%;background:${c}"></div>`;
+      tpM.appendChild(m);
+    });
+  }else{lvlWrap.style.display='none';}
+
+  // Verdict
+  const verdict=document.getElementById('ss-verdict');
+  const icon=document.getElementById('ss-icon');
+  const text=document.getElementById('ss-verdict-text');
+  if(lastWeightedRR>=2&&slDistPct<=5){
+    verdict.className='ss-verdict good';icon.textContent='✅';
+    text.textContent='Sterke setup — goed R/R en acceptabele stop loss afstand.';
+  }else if(lastWeightedRR>=1){
+    verdict.className='ss-verdict ok';icon.textContent='⚠️';
+    text.textContent='Acceptabele setup — overweeg je R/R te verbeteren voor je intreed.';
+  }else{
+    verdict.className='ss-verdict bad';icon.textContent='❌';
+    text.textContent='Zwakke setup — R/R onder 1:1. Pas je TP of SL aan voor betere verhouding.';
+  }
+}
+
+// ── HISTORY ───────────────────────────────────────────────────
+function saveTrade(){
+  const entry=parseFloat(document.getElementById('entry').value)||0;
+  const slP=parseFloat(document.getElementById('sl_price').value)||0;
+  if(!entry||!slP||entry===slP){alert('Vul eerst een geldige entry en stop loss in.');return;}
+  const exc=EXCHANGES.find(e=>e.id===exchId)||EXCHANGES[0];
+  const rec={id:Date.now(),asset:asset.name,dir,entry,slP,
+    balance:parseFloat(document.getElementById('balance').value)||0,
+    riskPct:parseFloat(document.getElementById('risk_pct').value)||0,
+    rr:lastWeightedRR,exchange:exc.name,
+    feeType:exc.hasMT?feeType:'fixed',
+    time:new Date().toLocaleString('nl-NL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})};
+  history.unshift(rec);
+  if(history.length>200)history=history.slice(0,200);
+  try{localStorage.setItem('morani_hist_v2',JSON.stringify(history));}catch(e){}
+  const btn=document.querySelector('.btn-primary'),orig=btn.innerHTML;
+  btn.innerHTML='✓ Opgeslagen!';btn.style.background='#3d6b18';btn.style.color='#fff';
+  setTimeout(()=>{btn.innerHTML=orig;btn.style.background='';btn.style.color='';},1800);
+}
+
+function clearHistory(){
+  if(!history.length)return;
+  if(!confirm('Weet je zeker dat je alle '+history.length+' trades wil verwijderen?'))return;
+  history=[];try{localStorage.removeItem('morani_hist_v2');}catch(e){}renderHistory();
+}
+
+function renderHistory(){
+  const el=document.getElementById('hist-list');
+  document.getElementById('hist-count').textContent=history.length+' / 200 trades opgeslagen';
+  if(!history.length){el.innerHTML='<div class="hist-empty">Nog geen trades opgeslagen.<br>Bereken een setup en druk op "Sla op".</div>';return;}
+  el.innerHTML='';
+  history.forEach(h=>{
+    const rrC=h.rr>=2?'#6ab02a':h.rr>=1?'#cc8c1a':'#c03535';
+    const d=document.createElement('div');d.className='h-row';
+    d.innerHTML=`
+      <div class="h-top">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span class="h-asset">${h.asset}</span>
+          <span class="h-dir ${h.dir}">${h.dir==='long'?'▲ Long':'▼ Short'}</span>
+          ${h.exchange?`<span style="font-size:10px;color:var(--text3);font-weight:600">${h.exchange}${h.feeType&&h.feeType!=='fixed'?' · '+h.feeType:''}</span>`:''}
+        </div>
+        <span class="h-time">${h.time}</span>
+      </div>
+      <div class="h-stats">
+        <div class="h-stat"><div class="hl">Entry</div><div class="hv">${parseFloat(h.entry).toLocaleString('nl-NL',{maximumFractionDigits:5})}</div></div>
+        <div class="h-stat"><div class="hl">Stop loss</div><div class="hv">${parseFloat(h.slP).toLocaleString('nl-NL',{maximumFractionDigits:5})}</div></div>
+        <div class="h-stat"><div class="hl">Risico</div><div class="hv">${h.riskPct}%</div></div>
+        <div class="h-stat"><div class="hl">R/R</div><div class="hv" style="color:${rrC}">${h.rr>0?'1:'+h.rr.toFixed(2):'—'}</div></div>
+      </div>
+    `;el.appendChild(d);
+  });
+}
+
+// ── WINRATE SIM ───────────────────────────────────────────────
+function renderSim(){
+  if(lastWeightedRR>0){
+    document.getElementById('sim-rr').value=lastWeightedRR.toFixed(2);
+    document.getElementById('sim-rr-display').textContent='1 : '+lastWeightedRR.toFixed(2);
+  }
+  const simRR=parseFloat(document.getElementById('sim-rr').value)||2;
+  const minWR=1/(1+simRR)*100;
+  const strats=[{l:'Scalping',wr:55},{l:'Day trading',wr:50},{l:'Swing trading',wr:45},{l:'Positie trading',wr:40},{l:'Minimaal nodig',wr:null,you:true}];
+  const chart=document.getElementById('sim-chart');chart.innerHTML='';
+  strats.forEach(s=>{
+    const wr=s.you?minWR:s.wr,pass=s.you||(s.wr>=minWR);
+    const bc=s.you?'rgba(201,168,76,.22)':pass?'rgba(106,176,42,.22)':'rgba(192,53,53,.22)';
+    const tc=s.you?'#C9A84C':pass?'#6ab02a':'#c03535';
+    const row=document.createElement('div');row.className='sim-bar-row';
+    row.innerHTML=`<div class="sim-lbl">${s.you?minWR.toFixed(1)+'%':s.wr+'%'}</div><div class="sim-track"><div class="sim-fill" style="width:${Math.min(wr/70*100,100)}%;background:${bc}"><span style="color:${tc}">${s.you?'Minimaal nodig: '+minWR.toFixed(1)+'%':s.l+' ('+s.wr+'%)'}</span></div></div>`;
+    chart.appendChild(row);
+  });
+  document.getElementById('sim-note').innerHTML=`Bij R/R <strong>1:${simRR.toFixed(2)}</strong> heb je minimaal <strong>${minWR.toFixed(1)}% winrate</strong> nodig. Win je 55%, dan is je edge <strong>+${Math.max(0,55-minWR).toFixed(1)}%</strong> per trade.`;
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+buildAssets();buildExchanges();updateFeeTypeVis();renderTps();calc();renderSim();
+</script>
+</body>
+</html>
